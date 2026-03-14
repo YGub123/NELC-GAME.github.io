@@ -25,7 +25,7 @@
       --back-border:rgba(176,120,83,0.15);--stat-bg:rgba(176,120,83,0.08);
     }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background-color:var(--bg);background-image:url("./image/background.webp");
+    body{background-color:var(--bg);background-image:url("/image/background.webp");
       background-size:cover;background-position:center;background-attachment:fixed;
       font-family:'Noto Serif SC',serif;color:var(--text);min-height:100vh;
       animation:pageFade .4s ease;overflow-x:hidden}
@@ -526,7 +526,7 @@ function handleDiffClick(gi,di){
 function toggleGroup(gi){
   if(expandedGroup===gi){
     closeGroupDOM(gi);expandedGroup=-1;
-    document.body.style.backgroundImage='url("./image/background.webp")';
+    document.body.style.backgroundImage='url("/image/background.webp")';
     if(selectedDiff&&selectedDiff.gi===gi){closeDiffDOM(selectedDiff.gi,selectedDiff.di);selectedDiff=null;hideInfoPanel()}
   }else{
     if(expandedGroup>=0)closeGroupDOM(expandedGroup);
@@ -596,7 +596,7 @@ function showInfoPanel(gi,di){
 
 function hideInfoPanel(){
   document.getElementById('infoPanel').classList.remove('show');
-  document.body.style.backgroundImage='url("./image/background.webp")';
+  document.body.style.backgroundImage='url("/image/background.webp")';
 }
 
 // ── 星星渲染 ──
