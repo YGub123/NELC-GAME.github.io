@@ -203,7 +203,10 @@ const SKIN_FILE_MAP = {
     'hit0':'hit0@2x.png','hit50':'hit50@2x.png','hit100':'hit100@2x.png','hit300':'hit300@2x.png',
     'hit300g':'hit300g@2x.png','hit300k':'hit300k@2x.png','hit100k':'hit100k@2x.png',
     'spinner-circle':'spinner-circle@2x.png','spinner-approachcircle':'spinner-approachcircle@2x.png',
-    'spinner-clear':'spinner-clear@2x.png',
+    'spinner-clear':'spinner-clear@2x.png','ranking-D':'ranking-D@2x.png','ranking-C':'ranking-C@2x.png',
+    'ranking-B':'ranking-B@2x.png','ranking-A':'ranking-A@2x.png',
+    'ranking-S':'ranking-S@2x.png','ranking-SH':'ranking-SH@2x.png',
+    'ranking-X':'ranking-X@2x.png','ranking-XH':'ranking-XH@2x.png',
     // 音效
     'normal-hitnormal':'normal-hitnormal.wav','normal-hitclap':'normal-hitclap.wav',
     'normal-hitwhistle':'normal-hitwhistle.wav','normal-hitfinish':'normal-hitfinish.wav',
@@ -1010,7 +1013,15 @@ function updateHUD(){
 function endGame(){G.state='ended';cancelAnimationFrame(G.animFrame);try{G.audioSource.stop()}catch(e){}
   const total=G.hits[300]+G.hits[100]+G.hits[50]+G.hits.miss;
   const acc=total>0?(G.hits[300]*300+G.hits[100]*100+G.hits[50]*50)/(total*300)*100:0;
-  let grade='D';if(acc>=95&&G.hits.miss===0)grade='S';else if(acc>=90)grade='A';else if(acc>=80)grade='B';else if(acc>=70)grade='C';
+  const ratio300=total>0?G.hits[300]/total:0;
+  const ratio50=total>0?G.hits[50]/total:0;
+  const noMiss=G.hits.miss===0;
+  let grade='D';
+  if(ratio300===1) grade='X';
+  else if(ratio300>0.9&&ratio50<0.01&&noMiss) grade='S';
+  else if((ratio300>0.8&&noMiss)||ratio300>0.9) grade='A';
+  else if((ratio300>0.7&&noMiss)||ratio300>0.8) grade='B';
+  else if(ratio300>0.6) grade='C';
   const m=G.bm.metadata;document.getElementById('rpSong').innerHTML=esc(m.artistUnicode||m.artist)+' - '+esc(m.titleUnicode||m.title)+' ['+esc(m.version)+']';
   document.getElementById('rpMapper').textContent='Beatmap by '+m.creator;
   document.getElementById('rpScore').innerHTML = numToImagesHTML(String(G.score).padStart(8,'0'), 50);
@@ -1019,7 +1030,14 @@ function endGame(){G.state='ended';cancelAnimationFrame(G.animFrame);try{G.audio
     hitRow('#66bb6a','100',G.hits[100])+hitRow('#8888ff','喝',G.hits.katu)+
     hitRow('#ffd54f','50',G.hits[50])+hitRow('#ef5350','Miss',G.hits.miss);
   document.getElementById('rpCombo').innerHTML = numToImagesHTML(G.maxCombo + 'x', 30);document.getElementById('rpAcc').innerHTML = numToImagesHTML(acc.toFixed(2) + '%', 30);
-  const ge=document.getElementById('rpGrade');ge.textContent=grade;ge.className='rp-grade '+grade;
+  const ge=document.getElementById('rpGrade');
+  const gradeImg=sI('ranking-'+grade);
+  if(gradeImg&&gradeImg.src){
+    ge.innerHTML=`<img src="${gradeImg.src}" style="height:180px;pointer-events:none;">`;
+    ge.className='rp-grade';
+  }else{
+    ge.textContent=grade;ge.className='rp-grade '+grade;
+  }
   const bgUrl=G.bm.events.background?G.bm._folder+'/'+G.bm.events.background:'';
   document.getElementById('rpRight').style.backgroundImage=bgUrl?`url('${bgUrl}')`:'none';resultsOverlay.classList.remove('hidden')}
 function hitRow(c, l, n) {
