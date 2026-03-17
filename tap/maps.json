@@ -32,5 +32,42 @@
       {"file": "Set It Off - Partners In Crime (feat. Neuro-sama & Evil Neuro) (MyAngelRuri) [The Cookies Heist (Old)].osu", "stars": 5.95},
       {"file": "Set It Off - Partners In Crime (feat. Neuro-sama & Evil Neuro) (MyAngelRuri) [The Cookies Heist (Remapped)].osu", "stars": 5.95}
     ]
+  },
+  {
+    "folder": "BOOM",
+    "osu": [
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [KTrain's Easy (not explosive)].osu", "stars": 1.36},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [Mualani's EASY (EXPLOSIVE)].osu", "stars": 1.86},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [KTrain's Normal BOOM].osu", "stars": 2.54},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [NeruKujimi's Hard].osu", "stars": 3.14},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [New Nirvana].osu", "stars": 4.67},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [Mualani's Extra].osu", "stars": 5.49},
+      {"file": "monii & Johnny R feat. Evil Neuro - BOOM (Synaelle) [BOOM].osu", "stars": 5.88}
+    ]
+  },
+  {
+    "folder": "EVIL",
+    "osu": [
+      {"file": "camila & Evil Neuro - [ EVIL ] (Jayblue) [Halloween Duet].osu", "stars": 3.59}
+    ]
+  },
+  {
+    "folder": "Machine love",
+    "osu": [
+      {"file": "Jamie Paige  Neuro-sama - Machine love (Neuro Cover) (Evilyn) [Can you teach me to be real].osu", "stars": 5.14}
+    ]
+  },
+  {
+    "folder": "Mesmerizer",
+    "osu": [
+      {"file": "Bao x Neuro-Sama - Mesmerizer  (English Cover) (Fissh) [Quiz Time !!!].osu", "stars": 6.45}
+    ]
+  },
+  {
+    "folder": "MONSTER",
+    "osu": [
+      {"file": "Camila ft. Neuro-Sama - MONSTER (cover ft. Neuro-sama) (Oyasuri) [Hard].osu", "stars": 4.06},
+      {"file": "Camila ft. Neuro-Sama - MONSTER (cover ft. Neuro-sama) (Oyasuri) [Cheeky Little Payback].osu", "stars": 4.97}
+    ]
   }
 ]

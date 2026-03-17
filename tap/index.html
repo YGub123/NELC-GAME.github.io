@@ -206,11 +206,12 @@ const SKIN_FILE_MAP = {
     'cursor':'cursor@2x.png','cursortrail':'cursortrail@2x.png','cursormiddle':'cursormiddle@2x.png',
     'hit0':'hit0@2x.png','hit50':'hit50@2x.png','hit100':'hit100@2x.png','hit300':'hit300@2x.png',
     'hit300g':'hit300g@2x.png','hit300k':'hit300k@2x.png','hit100k':'hit100k@2x.png',
-    'spinner-circle':'spinner-circle@2x.png','spinner-approachcircle':'spinner-approachcircle@2x.png',
+    'spinner-bottom':'spinner-bottom@2x.png','spinner-top':'spinner-top@2x.png',
+    'spinner-approachcircle':'spinner-approachcircle@2x.png',
     'spinner-clear':'spinner-clear@2x.png','ranking-D':'ranking-D@2x.png','ranking-C':'ranking-C@2x.png',
     'ranking-B':'ranking-B@2x.png','ranking-A':'ranking-A@2x.png',
     'ranking-S':'ranking-S@2x.png','ranking-SH':'ranking-SH@2x.png',
-    'ranking-X':'ranking-X@2x.png','ranking-XH':'ranking-XH@2x.png',
+    'ranking-X':'ranking-X@2x.png','ranking-XH':'ranking-XH@2x.png','followpoint':'followpoint@2x.png',
     // 音效
     'normal-hitnormal':'normal-hitnormal.wav','normal-hitclap':'normal-hitclap.wav',
     'normal-hitwhistle':'normal-hitwhistle.wav','normal-hitfinish':'normal-hitfinish.wav',
@@ -243,8 +244,8 @@ const SKIN_IMG_NAMES = [
   'sliderb0','sliderb1','sliderb2','sliderb3','sliderb4','sliderb5','sliderb6','sliderb7','sliderb8','sliderb9','sliderfollowcircle','reversearrow',
   'cursor','cursortrail','cursormiddle',
   'hit0','hit50','hit100','hit300','hit300g','hit300k','hit100k',
-  'spinner-circle','spinner-approachcircle','spinner-clear',
-  'ranking-D','ranking-C','ranking-B','ranking-A','ranking-S','ranking-SH','ranking-X','ranking-XH'
+  'spinner-bottom','spinner-top','spinner-approachcircle','spinner-clear',
+  'ranking-D','ranking-C','ranking-B','ranking-A','ranking-S','ranking-SH','ranking-X','ranking-XH','followpoint'
 ];
 
 function loadSkin() {
@@ -759,13 +760,45 @@ function processSliders(){if(G._lastMouseDown&&!G.mouseDown){for(let i=0;i<G.bm.
 function processSpinners(){const ox=(G.mouseX-G.offX)/G.scale,oy=(G.mouseY-G.offY)/G.scale;
   for(let i=0;i<G.bm.hitObjects.length;i++){const obj=G.bm.hitObjects[i];if(obj.type!=='spinner')continue;
     const st=G.objState[i];if(st.judged)continue;if(G.time<obj.time)continue;
+    for (let j = i + 1; j < G.bm.hitObjects.length; j++) {
+      const next = G.bm.hitObjects[j];
+      if (next.type === 'spinner') continue;
+      if (G.time >= next.time - G.bm.difficulty.preempt * 1.0) {
+        const needed2 = Math.max(1, (obj.duration / 1000) * 1.5);
+        const rot2 = st.spinnerRotations || 0;
+        let result2;
+        if (rot2 >= needed2) result2 = 300;
+        else if (rot2 >= needed2 * 0.7) result2 = 100;
+        else if (rot2 >= needed2 * 0.3) result2 = 50;
+        else result2 = 'miss';
+        const tr2 = Math.floor(rot2), cr2 = Math.floor(needed2);
+        if (tr2 > 0) G.score += Math.min(tr2, cr2) * 100 + Math.max(0, tr2 - cr2) * 1100;
+        judgeHit(i, result2, G.time);
+        break;
+      }
+      break;
+    }
+if (st.judged) continue;
     if(G.time>=obj.endTime){const needed=Math.max(1,(obj.duration/1000)*1.5),rot=st.spinnerRotations||0;
       let result;if(rot>=needed)result=300;else if(rot>=needed*0.7)result=100;else if(rot>=needed*0.3)result=50;else result='miss';
       const tr=Math.floor(rot),cr2=Math.floor(needed);if(tr>0)G.score+=Math.min(tr,cr2)*100+Math.max(0,tr-cr2)*1100;
       judgeHit(i,result,G.time);continue}
-    if(G.mouseDown){const angle=Math.atan2(oy-192,ox-256);
-      if(st.spinnerLastAngle!=null){let delta=angle-st.spinnerLastAngle;if(delta>Math.PI)delta-=2*Math.PI;if(delta<-Math.PI)delta+=2*Math.PI;
-        st.spinnerRotations=(st.spinnerRotations||0)+Math.abs(delta)/(2*Math.PI)}st.spinnerLastAngle=angle}else st.spinnerLastAngle=null}}
+    if (G.mouseDown) {
+    const angle = Math.atan2(oy - 192, ox - 256);
+    if (st.spinnerLastAngle != null) {
+      let delta = angle - st.spinnerLastAngle;
+      if (delta > Math.PI) delta -= 2 * Math.PI;
+      if (delta < -Math.PI) delta += 2 * Math.PI;
+      const absDelta = Math.abs(delta);
+      const dt = 1 / 60;
+      const maxRadPerFrame = (477 / 60) * 2 * Math.PI * dt;
+      const clampedDelta = Math.min(absDelta, maxRadPerFrame);
+      st.spinnerRotations = (st.spinnerRotations || 0) + clampedDelta / (2 * Math.PI);
+    }
+    st.spinnerLastAngle = angle;
+  } else {
+    st.spinnerLastAngle = null;
+  }}}
 
 function processMisses(){const hw=G.bm.difficulty.hitWindows;
   for(let i=0;i<G.bm.hitObjects.length;i++){if(G.objState[i].judged)continue;const obj=G.bm.hitObjects[i];
@@ -811,11 +844,127 @@ function render(){const ctx=G.ctx,W=G.canvas.width,H=G.canvas.height;ctx.clearRe
   ctx.save();ctx.translate(G.offX,G.offY);ctx.scale(G.scale,G.scale);
   const preempt=G.bm.difficulty.preempt,fadeIn=G.bm.difficulty.fadeIn,cr=G.bm.difficulty.circleRadius,time=G.time;
   const visible=[];
+  // ── Follow Points ──
+const fpImg = sI('followpoint');
+if (fpImg) {
+  const FP_SPACING = 48;
+  const FP_IMG_SIZE = 12;
+  const FP_ANIM_INTERVAL = 40;  // 每个点依次出现的间隔(ms)
+  const FP_FADEOUT = 200;        // 结尾渐出时长(ms)
+
+  for (let i = 0; i < G.bm.hitObjects.length - 1; i++) {
+    const objA = G.bm.hitObjects[i];
+    const objB = G.bm.hitObjects[i + 1];
+    const stB = G.objState[i + 1];
+    if (objA.type === 'spinner' || objB.type === 'spinner') continue;
+    const endA = objA.endTime || objA.time;
+    const fadeOutA = objA.type === 'slider' ? 300 : 200;
+    const disappearA = endA + fadeOutA;
+    const appearB = objB.time - preempt;
+    if (appearB - disappearA > 800) continue;
+
+    let startX = objA.x, startY = objA.y;
+    if (objA.type === 'slider' && objA._path && objA._path.length > 0) {
+      if (objA.repeat % 2 === 0) { startX = objA.x; startY = objA.y; }
+      else { const ep = objA._path[objA._path.length - 1]; startX = ep.x; startY = ep.y; }
+    }
+    const endX = objB.x, endY = objB.y;
+    const dx = endX - startX, dy = endY - startY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < FP_SPACING * 2) continue;
+
+    const angle = Math.atan2(dy, dx);
+    const count = Math.floor((dist - FP_SPACING) / FP_SPACING);
+    const animStart = objB.time - preempt;
+    if (time < animStart) continue;
+
+    // 判定后才开始渐出
+    let groupFade = 1;
+    if (stB.judged) {
+      const sinceDeath = time - (stB.hitTime || objB.time);
+      groupFade = Math.max(0, 1 - sinceDeath / FP_FADEOUT);
+      if (groupFade <= 0) continue;
+    }
+
+    for (let n = 1; n <= count; n++) {
+      const pointAppear = animStart + (n - 1) * FP_ANIM_INTERVAL;
+      if (time < pointAppear) continue;
+      const fadeInDur = 100;
+      const autoFadeStart = 500;
+      const autoFadeDur = 150;
+      const age = time - pointAppear;
+      let a = Math.min(age / fadeInDur, 1);
+      // 自动依次淡出
+      if (age > autoFadeStart) {
+        a *= Math.max(0, 1 - (age - autoFadeStart) / autoFadeDur);
+      }
+      a *= groupFade;
+if (a <= 0) continue;
+
+      const t = n / (count + 1);
+      const px = startX + dx * t, py = startY + dy * t;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(px, py);
+      ctx.rotate(angle);
+      ctx.drawImage(fpImg, -FP_IMG_SIZE / 2, -FP_IMG_SIZE / 2, FP_IMG_SIZE, FP_IMG_SIZE);
+      ctx.restore();
+    }
+  }
+}
   for(let i=0;i<G.bm.hitObjects.length;i++){const obj=G.bm.hitObjects[i],st=G.objState[i];
     if(time<obj.time-preempt)continue;
-    if(st.judged){const since=time-(st.hitTime||obj.time);
-      if(obj.type==='slider'){if(since>300)continue}else if(obj.type==='spinner'){continue}
-      else if(st.result==='miss'){if(since>100)continue}else{if(since>200)continue}}
+    if (st.judged) {
+    const since = time - (st.hitTime || obj.time);
+    if (obj.type === 'slider') {
+      if (since > 300) continue;
+    } else if (obj.type === 'spinner') {
+      if (since > 300) continue;
+      const cx = 256, cy = 192, baseR = 100;
+      const fadeProg = since / 300;
+      const fadeScale = 1.0 + fadeProg * 1.5;
+      const fadeAlpha = 1 - fadeProg;
+      const sz = baseR * 2.2 * fadeScale;
+      const visualAngle = (st.spinnerRotations || 0) * (2 * Math.PI) / 3;
+    
+      const spinBottom = sI('spinner-bottom');
+      const spinTop = sI('spinner-top');
+    
+      if (spinBottom) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = fadeAlpha;
+        ctx.drawImage(spinBottom, cx - sz / 2, cy - sz / 2, sz, sz);
+        ctx.restore();
+      }
+      if (spinTop) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = fadeAlpha;
+        ctx.translate(cx, cy);
+        ctx.rotate(visualAngle);
+        ctx.drawImage(spinTop, -sz / 2, -sz / 2, sz, sz);
+        ctx.restore();
+      }
+      if (!spinBottom && !spinTop) {
+        const spinImg = sI('spinner-circle');
+        if (spinImg) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = fadeAlpha;
+          ctx.translate(cx, cy);
+          ctx.rotate(visualAngle);
+          ctx.drawImage(spinImg, -sz / 2, -sz / 2, sz, sz);
+          ctx.restore();
+        }
+      }
+      continue;
+    } else if (st.result === 'miss') {
+      if (since > 100) continue;
+    } else {
+      if (since > 200) continue;
+    }
+  }
     visible.push({obj,st,idx:i})}
   visible.reverse();
 
@@ -833,19 +982,128 @@ function render(){const ctx=G.ctx,W=G.canvas.width,H=G.canvas.height;ctx.clearRe
       drawComboNum(ctx,obj.comboNumber,0,0,cr,alpha);ctx.restore();continue}
 
     // Spinner
-    if(obj.type==='spinner'){const cx=256,cy=192,sR=120;const rot=G.objState[idx].spinnerRotations||0;
-      const needed=Math.max(1,(obj.duration/1000)*1.5),prog=Math.min(rot/needed,1);
-      const spinImg=sI('spinner-circle'),spinAC=sI('spinner-approachcircle');
-      if(spinImg&&time>=obj.time){ctx.save();ctx.globalAlpha=alpha;ctx.translate(cx,cy);ctx.rotate(rot*Math.PI*2);
-        const sz=sR*2.2;ctx.drawImage(spinImg,-sz/2,-sz/2,sz,sz);ctx.restore()}
-      if(time>=obj.time){ctx.save();ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(cx,cy,sR,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);
-        ctx.lineWidth=6;ctx.strokeStyle=col;ctx.stroke();ctx.fillStyle='#fff';
-        ctx.font="bold 24px 'ZCOOL KuaiLe',sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(Math.floor(prog*100)+'%',cx,cy);ctx.restore()}
-      const aProg=Math.min((time-appearTime)/preempt,1),aR2=sR+(sR*2)*(1-aProg);
-      if(spinAC)drawImg(ctx,spinAC,cx,cy,aR2*2,aR2*2,alpha*0.5);
-      if(prog>=1){const clr=sI('spinner-clear');if(clr)drawImg(ctx,clr,cx,cy-60,clr.width*0.5,clr.height*0.5,alpha)}
-      continue}
+    if (obj.type === 'spinner') {
+      const cx = 256, cy = 192, baseR = 100;
+      const rot = st.spinnerRotations || 0;
+      const needed = Math.max(1, (obj.duration / 1000) * 1.5);
+      const prog = Math.min(rot / needed, 1);
+      const visualAngle = rot * (2 * Math.PI) / 3;
+      const sizeScale = 1.5 + 0.5 * prog;
+      const curR = baseR * sizeScale;
+      const sz = curR * 2.2;
+    
+      const spinBottom = sI('spinner-bottom');
+      const spinTop = sI('spinner-top');
+    
+      if (time >= obj.time) {
+        // 描边颜色：白→红（根据剩余时间）
+        const remain = Math.max(0, (obj.endTime - time) / obj.duration);
+        const sG = Math.floor(255 * remain);
+        const sB = Math.floor(255 * remain);
+        const strokeCol = `rgb(255,${sG},${sB})`;
+    
+        const glowIntensity = 4 + prog * 18;
+        const glowAlpha = 0.2 + prog * 0.6;
+    
+        // ── 底图（不旋转），用 screen 混合去黑 ──
+        if (spinBottom) {
+          // 发光层
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = alpha * glowAlpha * 0.5;
+          ctx.shadowColor = `rgba(50,180,255,${0.4 + prog * 0.6})`;
+          ctx.shadowBlur = glowIntensity;
+          ctx.drawImage(spinBottom, cx - sz / 2, cy - sz / 2, sz, sz);
+          ctx.restore();
+          // 主层
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = alpha;
+          ctx.drawImage(spinBottom, cx - sz / 2, cy - sz / 2, sz, sz);
+          ctx.restore();
+        }
+    
+        // ── 顶图（旋转），用 screen 混合去黑 ──
+        if (spinTop) {
+          // 发光层
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = alpha * glowAlpha * 0.5;
+          ctx.translate(cx, cy);
+          ctx.rotate(visualAngle);
+          ctx.shadowColor = `rgba(50,180,255,${0.4 + prog * 0.6})`;
+          ctx.shadowBlur = glowIntensity;
+          ctx.drawImage(spinTop, -sz / 2, -sz / 2, sz, sz);
+          ctx.restore();
+          // 主层
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = alpha;
+          ctx.translate(cx, cy);
+          ctx.rotate(visualAngle);
+          ctx.drawImage(spinTop, -sz / 2, -sz / 2, sz, sz);
+          ctx.restore();
+        }
+    
+        // 回退
+        if (!spinBottom && !spinTop) {
+          const spinImg = sI('spinner-circle');
+          if (spinImg) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = alpha;
+            ctx.translate(cx, cy);
+            ctx.rotate(visualAngle);
+            ctx.drawImage(spinImg, -sz / 2, -sz / 2, sz, sz);
+            ctx.restore();
+          }
+        }
+    
+        // ── 描边圆环，紧贴图片边缘 ──
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.beginPath();
+        ctx.arc(cx, cy, sz / 2 + 2, 0, Math.PI * 2);
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = strokeCol;
+        ctx.shadowColor = strokeCol;
+        ctx.shadowBlur = 6 + prog * 8;
+        ctx.stroke();
+        ctx.restore();
+      }
+    
+      // Bonus 分数
+      if (!st._bonusScore) st._bonusScore = 0;
+      if (prog >= 1) {
+        const extraRot = rot - needed;
+        const bonusSpins = Math.floor(extraRot);
+        const newBonus = bonusSpins * 1000;
+        if (newBonus > st._bonusScore) {
+          G.score += newBonus - st._bonusScore;
+          st._bonusScore = newBonus;
+        }
+      }
+    
+      // 中心文字
+      if (time >= obj.time) {
+        if (prog >= 1 && st._bonusScore > 0) {
+          drawComboNum(ctx, st._bonusScore, cx, cy + 40, 30, alpha);
+        }
+      }
+    
+      // approach circle
+      const spinAC = sI('spinner-approachcircle');
+      const aProg2 = Math.min((time - appearTime) / preempt, 1);
+      const aR2 = curR + (curR * 2) * (1 - aProg2);
+      if (spinAC) drawImg(ctx, spinAC, cx, cy, aR2 * 2, aR2 * 2, alpha * 0.5);
+    
+      // spinner-clear
+      if (prog >= 1) {
+        const clr = sI('spinner-clear');
+        if (clr) drawImg(ctx, clr, cx, cy - 90, clr.width * 0.35, clr.height * 0.35, alpha);
+      }
+      continue;
+    }
 
     // Slider track
     if(obj.type==='slider'&&obj._path)renderSlider(ctx,obj,cr,col,alpha,time);
@@ -946,7 +1204,7 @@ function renderSlider(ctx, obj, cr, col, alpha, time) {
       prog = Math.max(0, Math.min(1, prog));
       const bp = getSliderPosAt(path, prog);
       const fcImg = sI('sliderfollowcircle');
-      if (G.mouseDown && fcImg) drawImg(ctx, fcImg, bp.x, bp.y, cr * 3.2, cr * 3.2, 0.6);
+      if (G.mouseDown && fcImg) drawImg(ctx, fcImg, bp.x, bp.y, cr * 4.4, cr * 4.4, 1.0);
       const frame = Math.floor(time / 40) % 10;
       const tintedFrames = Skin.tinted.sliderb[obj.comboIndex];
       const sbImg = tintedFrames ? tintedFrames[frame] : sI('sliderb' + frame);
